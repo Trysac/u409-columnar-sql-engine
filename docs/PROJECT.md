@@ -47,3 +47,20 @@ Total: $0.5031. Prices: Anthropic list prices.
 | audit | gemini-3.1-flash-lite | no | 35828 | 147 | 0 | 18268 | 0.0096 |
 
 Total: $0.1137. Prices: Anthropic list prices.
+
+## Factory run columnar-sql-engine-vector-exec (measured from API usage)
+
+| Phase | Model | Batch | Input | Output | Cache write | Cache read | Cost (USD) |
+|---|---|---|---|---|---|---|---|
+| generation | gemini-3.8-flash | yes | 8348 | 32599 | 0 | 0 | 0.0643 |
+| fix-1 | gemini-3.8-flash | no | 104575 | 920 | 0 | 1094166 | 0.1639 |
+| fix-2 | gemini-3.8-flash | no | 133658 | 923 | 0 | 1089837 | 0.1854 |
+| fix-3 | gemini-3.8-flash | no | 128032 | 122 | 0 | 3020 | 0.0967 |
+| fix-1 | gemini-3.8-flash | no | 104196 | 1382 | 0 | 1122574 | 0.1675 |
+| fix-2 | gemini-3.8-flash | no | 34467 | 98 | 0 | 30249 | 0.0285 |
+| fix-3 | gemini-3.8-flash | no | 101659 | 1246 | 0 | 1081490 | 0.1620 |
+| fix-4 | gemini-3.8-flash | no | 108112 | 10915 | 0 | 1191661 | 0.2114 |
+| fix-5 | gemini-3.8-flash | no | 61448 | 475 | 0 | 373007 | 0.0758 |
+| audit | gemini-3.1-flash-lite | no | 56402 | 144 | 0 | 75549 | 0.0162 |
+
+Total: $1.1718. Prices: Anthropic list prices.
