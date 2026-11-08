@@ -1,0 +1,154 @@
+{
+  "schema": "modules.v1",
+  "project": "columnar-sql-engine",
+  "lang": "go",
+  "interfaces": [
+    {
+      "path": "interfaces/storage.go",
+      "content": "package interfaces\n\nimport (\n\t\"context\"\n\t\"io\"\n)\n\n// DataType identifies the columnar physical type.\ntype DataType uint8\n\nconst (\n\tTypeInt64 DataType = iota\n\tTypeFloat64\n\tTypeDecimal\n\tTypeVarChar\n\tTypeDate\n\tTypeBool\n)\n\n// ColumnVector represents a single column chunk with null bitmask.\ntype ColumnVector struct {\n\tType     DataType\n\tInt64s   []int64\n\tFloat64s []float64\n\tStrings  []string\n\tBools    []bool\n\tNullMask []bool // true indicates NULL\n\tLength   int\n}\n\n// RecordBatch groups column vectors of the same length.\ntype RecordBatch struct {\n\tColumns []ColumnVector\n\tLength  int\n}\n\n// EngineError represents a domain error with a stable machine-readable code.\ntype EngineError struct {\n\tCode    string\n\tMessage string\n}\n\nfunc (e *EngineError) Error() string { return e.Message }\n\nconst (\n\tErrSyntaxError          = \"syntax_error\"\n\tErrUnsupportedStatement = \"unsupported_statement\"\n\tErrTypeMismatch         = \"type_mismatch\"\n\tErrTableNotFound        = \"table_not_found\"\n\tErrColumnNotFound       = \"column_not_found\"\n\tErrLimitExceeded        = \"limit_exceeded\"\n\tErrDivisionByZero       = \"division_by_zero\"\n\tErrQueryTooLarge        = \"query_too_large\"\n\tErrDepthExceeded        = \"depth_exceeded\"\n)\n\n// TableMetadata contains schema and statistics for a registered table.\ntype TableMetadata struct {\n\tName        string\n\tColumnNames []string\n\tSchema      []DataType\n\tRowCount    int64\n\tByteSize    int64\n}\n\n// BatchReader iterates over record batches.\ntype BatchReader interface {\n\tNext(ctx context.Context) (*RecordBatch, error)\n\tSchema() []DataType\n\tColumnNames() []string\n\tClose() error\n}\n\n// TableCatalog manages registered CSV tables and creates batch scanners.\ntype TableCatalog interface {\n\tRegisterCSV(name string, r io.Reader, schema []DataType, maxScanBytes int64, batchSize int) error\n\tGetTable(name string) (*TableMetadata, error)\n\tScanTable(ctx context.Context, name string, projections []string, batchSize int) (BatchReader, error)\n\tListTables() []string\n\tClose() error\n}\n",
+      "sha256": "6dc5f62068231b2ade2c08fc767fe2e22e484aa09a03768ba7952aee6874968c"
+    },
+    {
+      "path": "interfaces/parser.go",
+      "content": "package interfaces\n\n// BinaryOp represents a binary operator token in an expression.\ntype BinaryOp int\n\nconst (\n\tOpEq BinaryOp = iota\n\tOpNotEq\n\tOpLt\n\tOpLtEq\n\tOpGt\n\tOpGtEq\n\tOpAdd\n\tOpSub\n\tOpMul\n\tOpDiv\n\tOpAnd\n\tOpOr\n\tOpLike\n)\n\n// Expr represents an AST expression node.\ntype Expr interface {\n\tisExpr()\n}\n\n// ColumnRef references a column name with optional table qualification.\ntype ColumnRef struct {\n\tTable string\n\tName  string\n}\n\nfunc (ColumnRef) isExpr() {}\n\n// LiteralExpr represents a typed scalar constant or NULL.\ntype LiteralExpr struct {\n\tType   DataType\n\tValue  any\n\tIsNull bool\n}\n\nfunc (LiteralExpr) isExpr() {}\n\n// BinaryExpr represents binary operations (arithmetic, comparison, logical).\ntype BinaryExpr struct {\n\tOp    BinaryOp\n\tLeft  Expr\n\tRight Expr\n}\n\nfunc (BinaryExpr) isExpr() {}\n\n// UnaryExpr represents unary operations (NOT, IS NULL, IS NOT NULL).\ntype UnaryExpr struct {\n\tOp      string\n\tOperand Expr\n}\n\nfunc (UnaryExpr) isExpr() {}\n\n// CaseWhen represents a single WHEN ... THEN ... arm in a CASE expression.\ntype CaseWhen struct {\n\tWhen Expr\n\tThen Expr\n}\n\n// CaseExpr represents CASE [expr] WHEN ... THEN ... ELSE ... END.\ntype CaseExpr struct {\n\tOperand Expr\n\tWhens   []CaseWhen\n\tElse    Expr\n}\n\nfunc (CaseExpr) isExpr() {}\n\n// CastExpr represents CAST(expr AS type).\ntype CastExpr struct {\n\tExpr       Expr\n\tTargetType DataType\n}\n\nfunc (CastExpr) isExpr() {}\n\n// AggregateCall represents an aggregate invocation (e.g. COUNT, SUM, AVG, MIN, MAX).\ntype AggregateCall struct {\n\tFunc     string\n\tDistinct bool\n\tArgs     []Expr\n}\n\nfunc (AggregateCall) isExpr() {}\n\n// JoinType specifies the join semantics.\ntype JoinType int\n\nconst (\n\tJoinInner JoinType = iota\n\tJoinLeft\n)\n\n// JoinClause represents a JOIN relation with an ON condition.\ntype JoinClause struct {\n\tType      JoinType\n\tTable     string\n\tAlias     string\n\tCondition Expr\n}\n\n// OrderByItem specifies an ORDER BY expression with ordering directions.\ntype OrderByItem struct {\n\tExpr       Expr\n\tAscending  bool\n\tNullsFirst bool\n}\n\n// SelectItem represents a projected column or expression with an optional alias.\ntype SelectItem struct {\n\tExpr  Expr\n\tAlias string\n}\n\n// SelectStatement represents the AST for a parsed SELECT query.\ntype SelectStatement struct {\n\tProjections []SelectItem\n\tFromTable   string\n\tFromAlias   string\n\tJoins       []JoinClause\n\tWhere       Expr\n\tGroupBy     []Expr\n\tHaving      Expr\n\tOrderBy     []OrderByItem\n\tLimit       *int64\n\tOffset      *int64\n}\n\n// SQLParser parses SQL text into AST statements.\ntype SQLParser interface {\n\tParse(sql string) (*SelectStatement, error)\n}\n",
+      "sha256": "345957c9e832f3f9968578eecb6d5a0a794f04711ca328e92187a46157350dc7"
+    },
+    {
+      "path": "interfaces/exec.go",
+      "content": "package interfaces\n\nimport \"context\"\n\n// Operator represents a physical vectorized execution operator.\ntype Operator interface {\n\tInit(ctx context.Context) error\n\tNext(ctx context.Context) (*RecordBatch, error)\n\tSchema() []DataType\n\tColumnNames() []string\n\tClose() error\n}\n\n// ExecutionContext provides resource tracking and cancellation.\ntype ExecutionContext interface {\n\tContext() context.Context\n\tBatchSize() int\n\tMaxMemory() int64\n}\n\n// VectorEvaluator evaluates expressions over RecordBatches.\ntype VectorEvaluator interface {\n\tEvaluate(ctx context.Context, expr Expr, batch *RecordBatch, columnNames []string) (*ColumnVector, error)\n}\n\n// ExecutionEngine creates executable operator pipelines from physical plans.\ntype ExecutionEngine interface {\n\tExecute(ctx context.Context, plan PhysicalPlanNode) (Operator, error)\n\tEvaluator() VectorEvaluator\n}\n",
+      "sha256": "6f549655df35f479880df72c04d2ff7ad2877ff81398dc893c3527147e73eb12"
+    },
+    {
+      "path": "interfaces/planner.go",
+      "content": "package interfaces\n\nimport (\n\t\"context\"\n\t\"time\"\n)\n\n// PhysicalPlanNode represents an operator node in the physical execution tree.\ntype PhysicalPlanNode interface {\n\tName() string\n\tChildren() []PhysicalPlanNode\n\tSchema() []DataType\n\tColumnNames() []string\n\tExplain(analyze bool) string\n}\n\n// OperatorMetrics records runtime metrics for EXPLAIN ANALYZE.\ntype OperatorMetrics struct {\n\tOperatorName string\n\tRowsEmitted  int64\n\tBatchesCount int64\n\tDuration     time.Duration\n}\n\n// QueryPlanner transforms AST statements into optimized physical plans.\ntype QueryPlanner interface {\n\tPlan(ctx context.Context, stmt *SelectStatement, catalog TableCatalog) (PhysicalPlanNode, error)\n\tExplain(plan PhysicalPlanNode, analyze bool, metrics []OperatorMetrics) string\n}\n\n// RuleOptimizer applies rule-based optimizations (pushdowns, folding).\ntype RuleOptimizer interface {\n\tOptimize(plan PhysicalPlanNode) (PhysicalPlanNode, error)\n}\n",
+      "sha256": "b922fa7c41875da0dbf350ea0cae3400371cb47cd19d2c6fbe29caf881c98f24"
+    },
+    {
+      "path": "interfaces/engine.go",
+      "content": "package interfaces\n\nimport (\n\t\"context\"\n\t\"io\"\n)\n\n// Options configure the engine limits and defaults.\ntype Options struct {\n\tMaxScanBytes int64 // default: 104857600 (100MB)\n\tBatchSize    int   // default: 1024\n\tMaxMemory    int64 // default: 268435456 (256MB)\n}\n\n// RowsCursor provides iteration over query results.\ntype RowsCursor interface {\n\tNext() bool\n\tScan(dest ...any) error\n\tClose() error\n\tCurrentBatch() *RecordBatch\n}\n\n// EngineAPI defines the full public SQL engine interface.\ntype EngineAPI interface {\n\tClose() error\n\tRegisterCSV(name string, r io.Reader, schema []DataType) error\n\tQuery(ctx context.Context, sql string) (RowsCursor, error)\n\tExplain(ctx context.Context, sql string, analyze bool) (string, error)\n}\n",
+      "sha256": "102e9ebfd7e6b2cbbe948bafac441847de6c295705fe62c4ef1df970569249b2"
+    }
+  ],
+  "modules": [
+    {
+      "id": "storage",
+      "goal": "Implement CSV scanning, batch slicing into typed column vectors (1024-row batches), table catalog management, and MaxScanBytes limits.",
+      "acceptance": [
+        "IF a CSV source exceeds MaxScanBytes of 104857600 bytes THEN RegisterCSV returns *EngineError with code 'limit_exceeded'",
+        "WHEN a table of 2500 rows is scanned THEN the scan emits batches of 1024, 1024 and 452 rows"
+      ],
+      "owns": [
+        "internal/storage/"
+      ],
+      "implements": [
+        "interfaces/storage.go"
+      ],
+      "consumes": [],
+      "depends_on": []
+    },
+    {
+      "id": "parser",
+      "goal": "Implement SQL lexer and recursive descent parser for SELECT queries, expressions, JOINs, aggregations, GROUP BY, ORDER BY, LIMIT, and OFFSET with syntax error handling.",
+      "acceptance": [
+        "IF the SQL is 'SELECT FROM WHERE' THEN Query returns *EngineError with code 'syntax_error'"
+      ],
+      "owns": [
+        "internal/parser/"
+      ],
+      "implements": [
+        "interfaces/parser.go"
+      ],
+      "consumes": [],
+      "depends_on": []
+    },
+    {
+      "id": "vector-exec",
+      "goal": "Implement vectorized execution operators, three-valued NULL logic, scalar expressions, hash join, hash aggregations, and NULLS FIRST/LAST sorting.",
+      "acceptance": [
+        "WHEN table t(id INT64, g VARCHAR, v FLOAT64) holds (1,'a',1.5), (2,'a',2.5), (3,'b',NULL) and Query runs 'SELECT g, SUM(v), COUNT(v), COUNT(*) FROM t GROUP BY g ORDER BY g' THEN rows are ('a', 4.0, 2, 2) and ('b', NULL, 0, 1)",
+        "WHEN l(id) holds 1 and NULL and r(id) holds 1 and NULL THEN 'SELECT COUNT(*) FROM l JOIN r ON l.id = r.id' returns 1 and the LEFT JOIN form returns 2",
+        "WHEN Query runs 'SELECT NULL AND FALSE, NULL OR TRUE, NULL = NULL' THEN the row is (false, true, NULL)",
+        "WHEN Query runs 'SELECT v FROM t ORDER BY v NULLS FIRST' THEN the first value is NULL, and with NULLS LAST the last value is NULL"
+      ],
+      "owns": [
+        "internal/exec/"
+      ],
+      "implements": [
+        "interfaces/exec.go"
+      ],
+      "consumes": [
+        "interfaces/storage.go"
+      ],
+      "depends_on": [
+        "storage"
+      ]
+    },
+    {
+      "id": "planner",
+      "goal": "Implement logical query planning, rule-based optimizations (predicate and projection pushdown, constant folding, join order by estimated cardinality), and EXPLAIN plan formatting.",
+      "acceptance": [
+        "WHEN Explain(ctx, 'SELECT COUNT(*) FROM t', true) runs on the 3-row table THEN the text contains 'Scan' with 'rows=3' and 'HashAggregate' with 'rows=1'"
+      ],
+      "owns": [
+        "internal/planner/"
+      ],
+      "implements": [
+        "interfaces/planner.go"
+      ],
+      "consumes": [
+        "interfaces/parser.go",
+        "interfaces/exec.go"
+      ],
+      "depends_on": [
+        "parser",
+        "vector-exec"
+      ]
+    },
+    {
+      "id": "engine-api",
+      "goal": "Provide the top-level Open, Close, RegisterCSV, Query, and Explain engine API, cursor rows scanning, and run committed golden query test suite.",
+      "acceptance": [
+        "WHEN the committed testdata/queries.json cases (at least 30 queries over small tables with NULLs, expected rows written out) run THEN every result matches in order, types and decimals"
+      ],
+      "owns": [
+        "internal/engine/",
+        "testdata/"
+      ],
+      "implements": [
+        "interfaces/engine.go"
+      ],
+      "consumes": [
+        "interfaces/storage.go",
+        "interfaces/parser.go",
+        "interfaces/exec.go",
+        "interfaces/planner.go"
+      ],
+      "depends_on": [
+        "storage",
+        "parser",
+        "vector-exec",
+        "planner"
+      ]
+    },
+    {
+      "id": "cli-conformance",
+      "goal": "Implement the CLI executable with metric export via u135-exporter-kit, and CI conformance testing suite comparing TPC-H and differential queries against SQLite and DuckDB.",
+      "acceptance": [
+        "WHEN the CI conformance job runs the 22 TPC-H queries at scale 0.1 and 10000 random differential queries against SQLite and DuckDB CLIs THEN at least 20 of 22 TPC-H results and 100 percent of differential results are identical"
+      ],
+      "owns": [
+        "cmd/columnarsqlengine/",
+        "internal/metrics/",
+        "test/conformance/",
+        "ci/"
+      ],
+      "implements": [],
+      "consumes": [
+        "interfaces/engine.go"
+      ],
+      "depends_on": [
+        "engine-api"
+      ]
+    }
+  ]
+}
