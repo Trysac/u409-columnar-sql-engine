@@ -37,3 +37,13 @@ Measured values only; a value that has not been measured stays "pending measurem
 | audit | gemini-3.1-flash-lite | no | 0 | 0 | 0 | 0 | 0.0000 |
 
 Total: $0.5031. Prices: Anthropic list prices.
+
+## Factory run columnar-sql-engine-parser (measured from API usage)
+
+| Phase | Model | Batch | Input | Output | Cache write | Cache read | Cost (USD) |
+|---|---|---|---|---|---|---|---|
+| generation | gemini-3.8-flash | yes | 8108 | 19854 | 0 | 0 | 0.0403 |
+| fix-1 | gemini-3.8-flash | no | 53612 | 625 | 0 | 283913 | 0.0638 |
+| audit | gemini-3.1-flash-lite | no | 35828 | 147 | 0 | 18268 | 0.0096 |
+
+Total: $0.1137. Prices: Anthropic list prices.
