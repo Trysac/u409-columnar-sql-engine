@@ -9,6 +9,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Implement top-level columnar SQL Engine API, CSV table registration, query cursor, and golden query suite
 - Implement physical query planner, rule-based optimizer, and EXPLAIN plan formatter with execution metrics.
 - Add vectorized execution operators, expressions evaluator, three-valued logic, hash aggregation and join
 - Add SQL lexer and recursive descent parser for SELECT queries, expressions, JOINs, and aggregations.

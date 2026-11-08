@@ -1,0 +1,247 @@
+[
+  {
+    "name": "q01_select_all",
+    "sql": "SELECT id, name, val FROM t ORDER BY id",
+    "expected": [
+      [1, "alpha", 10.5],
+      [2, "beta", 20.0],
+      [3, "gamma", null],
+      [4, "delta", 40.25],
+      [5, null, 50.0]
+    ]
+  },
+  {
+    "name": "q02_where_equality",
+    "sql": "SELECT id, name FROM t WHERE id = 2",
+    "expected": [
+      [2, "beta"]
+    ]
+  },
+  {
+    "name": "q03_where_greater_than",
+    "sql": "SELECT id, val FROM t WHERE val > 20.0 ORDER BY id",
+    "expected": [
+      [4, 40.25],
+      [5, 50.0]
+    ]
+  },
+  {
+    "name": "q04_where_is_null",
+    "sql": "SELECT id FROM t WHERE val IS NULL ORDER BY id",
+    "expected": [
+      [3]
+    ]
+  },
+  {
+    "name": "q05_where_is_not_null",
+    "sql": "SELECT id FROM t WHERE name IS NOT NULL ORDER BY id",
+    "expected": [
+      [1],
+      [2],
+      [3],
+      [4]
+    ]
+  },
+  {
+    "name": "q06_count_all",
+    "sql": "SELECT COUNT(*) FROM t",
+    "expected": [
+      [5]
+    ]
+  },
+  {
+    "name": "q07_count_column_skips_null",
+    "sql": "SELECT COUNT(val) FROM t",
+    "expected": [
+      [4]
+    ]
+  },
+  {
+    "name": "q08_sum_column",
+    "sql": "SELECT SUM(val) FROM t",
+    "expected": [
+      [120.75]
+    ]
+  },
+  {
+    "name": "q09_avg_column",
+    "sql": "SELECT AVG(val) FROM t",
+    "expected": [
+      [30.1875]
+    ]
+  },
+  {
+    "name": "q10_min_max",
+    "sql": "SELECT MIN(val), MAX(val) FROM t",
+    "expected": [
+      [10.5, 50.0]
+    ]
+  },
+  {
+    "name": "q11_group_by_sum",
+    "sql": "SELECT grp, SUM(amount) FROM sales GROUP BY grp ORDER BY grp",
+    "expected": [
+      ["east", 250.0],
+      ["north", 100.0],
+      ["west", 150.0]
+    ]
+  },
+  {
+    "name": "q12_group_by_having",
+    "sql": "SELECT grp, SUM(amount) FROM sales GROUP BY grp HAVING SUM(amount) > 120.0 ORDER BY grp",
+    "expected": [
+      ["east", 250.0],
+      ["west", 150.0]
+    ]
+  },
+  {
+    "name": "q13_inner_join",
+    "sql": "SELECT l.id, l.name, r.score FROM l JOIN r ON l.id = r.id ORDER BY l.id",
+    "expected": [
+      [1, "alice", 95.0],
+      [2, "bob", 80.0]
+    ]
+  },
+  {
+    "name": "q14_left_join",
+    "sql": "SELECT l.id, l.name, r.score FROM l LEFT JOIN r ON l.id = r.id ORDER BY l.id",
+    "expected": [
+      [1, "alice", 95.0],
+      [2, "bob", 80.0],
+      [3, "charlie", null],
+      [null, "david", null]
+    ]
+  },
+  {
+    "name": "q15_order_by_desc",
+    "sql": "SELECT id FROM t ORDER BY id DESC",
+    "expected": [
+      [5],
+      [4],
+      [3],
+      [2],
+      [1]
+    ]
+  },
+  {
+    "name": "q16_order_by_nulls_first",
+    "sql": "SELECT id, val FROM t ORDER BY val NULLS FIRST, id",
+    "expected": [
+      [3, null],
+      [1, 10.5],
+      [2, 20.0],
+      [4, 40.25],
+      [5, 50.0]
+    ]
+  },
+  {
+    "name": "q17_order_by_nulls_last",
+    "sql": "SELECT id, val FROM t ORDER BY val NULLS LAST, id",
+    "expected": [
+      [1, 10.5],
+      [2, 20.0],
+      [4, 40.25],
+      [5, 50.0],
+      [3, null]
+    ]
+  },
+  {
+    "name": "q18_limit_offset",
+    "sql": "SELECT id FROM t ORDER BY id LIMIT 2 OFFSET 1",
+    "expected": [
+      [2],
+      [3]
+    ]
+  },
+  {
+    "name": "q19_arithmetic_expressions",
+    "sql": "SELECT id, id + 10, id * 2 FROM t WHERE id <= 2 ORDER BY id",
+    "expected": [
+      [1, 11, 2],
+      [2, 12, 4]
+    ]
+  },
+  {
+    "name": "q20_three_valued_logic",
+    "sql": "SELECT NULL AND FALSE, NULL OR TRUE, NULL = NULL",
+    "expected": [
+      [false, true, null]
+    ]
+  },
+  {
+    "name": "q21_case_when",
+    "sql": "SELECT id, CASE WHEN id < 3 THEN 'low' ELSE 'high' END AS category FROM t WHERE id <= 3 ORDER BY id",
+    "expected": [
+      [1, "low"],
+      [2, "low"],
+      [3, "high"]
+    ]
+  },
+  {
+    "name": "q22_cast_expression",
+    "sql": "SELECT CAST(id AS VARCHAR), CAST(val AS INT64) FROM t WHERE id = 1",
+    "expected": [
+      ["1", 10]
+    ]
+  },
+  {
+    "name": "q23_like_expression",
+    "sql": "SELECT name FROM t WHERE name LIKE 'a%'",
+    "expected": [
+      ["alpha"]
+    ]
+  },
+  {
+    "name": "q24_not_operator",
+    "sql": "SELECT id FROM t WHERE NOT (id > 2) ORDER BY id",
+    "expected": [
+      [1],
+      [2]
+    ]
+  },
+  {
+    "name": "q25_distinct_aggregate",
+    "sql": "SELECT COUNT(DISTINCT grp) FROM sales",
+    "expected": [
+      [3]
+    ]
+  },
+  {
+    "name": "q26_empty_aggregate",
+    "sql": "SELECT COUNT(*), SUM(val) FROM t WHERE id > 100",
+    "expected": [
+      [0, null]
+    ]
+  },
+  {
+    "name": "q27_join_with_null_keys",
+    "sql": "SELECT COUNT(*) FROM l JOIN r ON l.id = r.id",
+    "expected": [
+      [2]
+    ]
+  },
+  {
+    "name": "q28_multiple_aggregates_group_by",
+    "sql": "SELECT g, SUM(v), COUNT(v), COUNT(*) FROM t_nulls GROUP BY g ORDER BY g",
+    "expected": [
+      ["a", 4.0, 2, 2],
+      ["b", null, 0, 1]
+    ]
+  },
+  {
+    "name": "q29_between_via_and",
+    "sql": "SELECT id FROM t WHERE id >= 2 AND id <= 4 ORDER BY id",
+    "expected": [
+      [2],
+      [3],
+      [4]
+    ]
+  },
+  {
+    "name": "q30_literals_select",
+    "sql": "SELECT 42, 'hello', TRUE",
+    "expected": [
+      [42, "hello", true]
+    ]
+  }
+]
