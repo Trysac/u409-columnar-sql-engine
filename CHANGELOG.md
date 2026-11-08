@@ -9,4 +9,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- feat(storage): implement CSV scanning, batch slicing into typed column vectors, table catalog, and MaxScanBytes limits
 - Initial project structure from the factory utility template.
