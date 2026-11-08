@@ -9,4 +9,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Add vectorized execution operators, expressions evaluator, three-valued logic, hash aggregation and join
+- Add SQL lexer and recursive descent parser for SELECT queries, expressions, JOINs, and aggregations.
+- feat(storage): implement CSV scanning, batch slicing into typed column vectors, table catalog, and MaxScanBytes limits
 - Initial project structure from the factory utility template.
